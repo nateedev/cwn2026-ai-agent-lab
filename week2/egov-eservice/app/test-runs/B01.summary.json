@@ -1,0 +1,13 @@
+{
+ "total": 51,
+ "passed": 50,
+ "failed": [
+  "TC-FEE-01"
+ ],
+ "details": [
+  {
+   "id": "TC-FEE-01",
+   "brief": "Error: area 101 | Expected: \"฿1,010\" | Received: \"฿1,000\" | - area 101 getByTestId('fee-total') with timeout 7000ms | - waiting for getByTestId('fee-total') | - unexpected value \"฿1,000\""
+  }
+ ]
+}

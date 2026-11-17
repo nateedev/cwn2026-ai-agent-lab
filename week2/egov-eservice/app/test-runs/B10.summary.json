@@ -1,0 +1,23 @@
+{
+ "total": 51,
+ "passed": 48,
+ "failed": [
+  "TC-DASH-01",
+  "TC-DASH-02",
+  "TC-DASH-03"
+ ],
+ "details": [
+  {
+   "id": "TC-DASH-01",
+   "brief": "Error: expect(locator).toHaveText(expected) failed | Expected: \"–\" | Received: \"0.0%\" | - Expect \"toHaveText\" getByTestId('kpi-ontime-pct') with timeout 7000ms | - waiting for getByTestId('kpi-ontime-pct') | - unexpected value \"0.0%\""
+  },
+  {
+   "id": "TC-DASH-02",
+   "brief": "Error: 2026-11 ALL | - Expected  - 1 | + Received  + 1 | -   \"ontime\": \"85.7%\", | +   \"ontime\": \"23.1%\", | - Timeout 7000ms exceeded while waiting on the predicate"
+  },
+  {
+   "id": "TC-DASH-03",
+   "brief": "Error: expect(received).toEqual(expected) // deep equality | - Expected  - 1 | + Received  + 1 | -   \"ontime\": \"85.7%\", | +   \"ontime\": \"23.1%\", | - Timeout 7000ms exceeded while waiting on the predicate"
+  }
+ ]
+}

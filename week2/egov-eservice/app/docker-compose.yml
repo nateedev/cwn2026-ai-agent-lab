@@ -1,0 +1,37 @@
+# e-Service กลาง เทศบาลนครตัวอย่าง (สมมติ) · รัน: docker compose up --build
+#   TEST_MODE=1 เปิด test hook (ไม่ตั้ง = ปิด) · BUG_MODE=B03,B07 เปิดบั๊กตาม BUGS.md
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: egov
+      POSTGRES_PASSWORD: egov
+      POSTGRES_DB: egov
+      TZ: Asia/Bangkok
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U egov -d egov"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql/data
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://egov:egov@db:5432/egov
+      PORT: "3000"
+      TZ: Asia/Bangkok
+      TEST_MODE: ${TEST_MODE:-}
+      BUG_MODE: ${BUG_MODE-}
+      DATA_KEY: ${DATA_KEY:-egov-test-data-key-do-not-use-in-prod}
+      SIGN_KEY: ${SIGN_KEY:-egov-test-sign-key-do-not-use-in-prod}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 30

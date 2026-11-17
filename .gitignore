@@ -1,0 +1,50 @@
+# ---- โจทย์จากอาจารย์ (ไม่ต้องส่ง) ----
+egov-brief/
+
+# ---- backup / ของเก่าจากการ reset ----
+_backup/
+_old/
+
+# ---- Node / build ----
+node_modules/
+.pnpm-store/
+dist/
+build/
+.next/
+coverage/
+*.tsbuildinfo
+
+# ---- Playwright: ผลรันชั่วคราว (ส่งเฉพาะ test-report/) ----
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# ---- ความลับ / ค่าเฉพาะเครื่อง ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- log / ไฟล์ชั่วคราว ----
+*.log
+logs/
+tmp/
+.tmp/
+
+# ---- ฐานข้อมูลที่ docker สร้างไว้ในเครื่อง ----
+pgdata/
+db-data/
+*.sqlite
+*.db
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# ---- คู่มือสำหรับ AI (เฉพาะเครื่องนี้ ไม่ต้องส่ง) ----
+AGENTS.md

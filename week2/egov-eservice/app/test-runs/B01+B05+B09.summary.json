@@ -1,0 +1,23 @@
+{
+ "total": 51,
+ "passed": 48,
+ "failed": [
+  "TC-FEE-01",
+  "TC-PAY-01",
+  "TC-PDPA-02"
+ ],
+ "details": [
+  {
+   "id": "TC-FEE-01",
+   "brief": "Error: area 101 | Expected: \"฿1,010\" | Received: \"฿1,000\" | - area 101 getByTestId('fee-total') with timeout 7000ms | - waiting for getByTestId('fee-total') | - unexpected value \"฿1,000\""
+  },
+  {
+   "id": "TC-PAY-01",
+   "brief": "Error: รอบ 3 | Expected: 410 | Received: 200"
+  },
+  {
+   "id": "TC-PDPA-02",
+   "brief": "Error: off.reg1 /api/officer/queue?filter=all | Expected pattern: not /\\d{13}/ | Received string:      \"{\\\"items\\\":[{\\\"caseNo\\\":\\\"EG-2569-000020\\\",\\\"serviceId\\\":\\\"SV-01\\\",\\\"applicantName\\\":\\\"สมชาย ใจดี\\\",\\\"idMasked\\\":\\\"X-XXXX-XXXXX-45-6\\\",\\\"status\\\":\\\"IN_REVIEW\\\",\\\"step\\\":null,\\\"owner\\\":\\\"off.reg1\\\",\\\"dueAt\\\":\\\"2026-11-30T16:30:00+07:00\\\",\\\"slaLevel\\\":\\\"overdue\\\",\\\"idNo\\\":\\\"1101700123456\\\"},{\\\"cas"
+  }
+ ]
+}

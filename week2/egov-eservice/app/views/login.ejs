@@ -1,0 +1,97 @@
+<h1>เข้าสู่ระบบ</h1>
+<div role="tablist">
+  <button type="button" role="tab" data-testid="login-tab-citizen" id="tab-c" aria-selected="true">ประชาชน</button>
+  <button type="button" role="tab" data-testid="login-tab-staff" id="tab-s" aria-selected="false">เจ้าหน้าที่</button>
+</div>
+
+<section id="panel-c" role="tabpanel" aria-labelledby="tab-c">
+  <form id="thaid-form" novalidate>
+    <label for="thaid-id">เลขบัตรประชาชน 13 หลัก</label>
+    <input id="thaid-id" data-testid="thaid-id-input" name="idNo" type="text" inputmode="numeric" autocomplete="off">
+    <p data-testid="thaid-error" role="alert" hidden></p>
+    <button type="submit" data-testid="thaid-submit">เข้าสู่ระบบด้วย ThaiD (จำลอง)</button>
+  </form>
+  <div data-testid="otp-step" hidden>
+    <form id="otp-form" novalidate>
+      <label for="otp-in">รหัส OTP</label>
+      <input id="otp-in" data-testid="otp-input" name="otp" type="text" inputmode="numeric" autocomplete="off">
+      <p data-testid="otp-error" role="alert" hidden></p>
+      <p data-testid="otp-attempts-left" hidden></p>
+      <p data-testid="lock-message" role="alert" hidden></p>
+      <p hidden id="lock-wrap">ปลดล็อกเวลา <time data-testid="lock-until"></time></p>
+      <button type="submit" data-testid="otp-submit">ยืนยัน OTP</button>
+    </form>
+  </div>
+</section>
+
+<section id="panel-s" role="tabpanel" aria-labelledby="tab-s" hidden>
+  <form id="staff-form" novalidate>
+    <label for="staff-u">ชื่อผู้ใช้</label>
+    <input id="staff-u" data-testid="staff-username" name="username" type="text" autocomplete="username">
+    <label for="staff-p">รหัสผ่าน</label>
+    <input id="staff-p" data-testid="staff-password" name="password" type="password" autocomplete="current-password">
+    <p data-testid="staff-error" role="alert" hidden></p>
+    <button type="submit" data-testid="staff-submit">เข้าสู่ระบบเจ้าหน้าที่ (SSO ภาครัฐ จำลอง)</button>
+  </form>
+</section>
+
+<script>
+(function () {
+  var $ = function (t) { return document.querySelector('[data-testid="' + t + '"]'); };
+  var show = function (el, text) { el.textContent = text || el.textContent; el.hidden = false; };
+  var post = function (url, body) {
+    return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, body: j }; }); });
+  };
+  function tab(staff) {
+    document.getElementById('panel-c').hidden = staff;
+    document.getElementById('panel-s').hidden = !staff;
+    $('login-tab-citizen').setAttribute('aria-selected', String(!staff));
+    $('login-tab-staff').setAttribute('aria-selected', String(staff));
+  }
+  $('login-tab-citizen').addEventListener('click', function () { tab(false); });
+  $('login-tab-staff').addEventListener('click', function () { tab(true); });
+
+  var idNo = '';
+  function resetOtpMsgs() { ['otp-error', 'otp-attempts-left', 'lock-message'].forEach(function (t) { $(t).hidden = true; }); document.getElementById('lock-wrap').hidden = true; }
+  function lockUi(b) {
+    resetOtpMsgs();
+    show($('lock-message'), 'ผิดเกินกำหนด เลขบัตรนี้ถูกล็อก 15 นาที');
+    var t = $('lock-until'); t.setAttribute('data-iso', b.lockedUntil); t.setAttribute('datetime', b.lockedUntil); t.textContent = b.lockedUntilText || b.lockedUntil;
+    document.getElementById('lock-wrap').hidden = false;
+  }
+
+  document.getElementById('thaid-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    idNo = $('thaid-id-input').value.trim();
+    $('thaid-error').hidden = true; $('otp-step').hidden = true; resetOtpMsgs();
+    post('/api/auth/thaid/start', { idNo: idNo }).then(function (r) {
+      if (r.status === 200) { $('otp-step').hidden = false; $('otp-input').focus(); }
+      else if (r.status === 423) { $('otp-step').hidden = false; lockUi(r.body); }
+      else show($('thaid-error'), 'เลขบัตรประชาชนไม่ถูกต้อง');
+    });
+  });
+
+  document.getElementById('otp-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    post('/api/auth/thaid/verify', { idNo: idNo, otp: $('otp-input').value.trim() }).then(function (r) {
+      resetOtpMsgs();
+      if (r.status === 200) { window.location.href = r.body.registered ? '/citizen' : '/register'; }
+      else if (r.status === 423) lockUi(r.body);
+      else if (r.status === 401) {
+        show($('otp-error'), 'รหัส OTP ไม่ถูกต้อง');
+        show($('otp-attempts-left'), 'เหลือ ' + r.body.attemptsLeft + ' ครั้ง');
+      } else { $('otp-step').hidden = true; show($('thaid-error'), 'เลขบัตรประชาชนไม่ถูกต้อง'); }
+    });
+  });
+
+  document.getElementById('staff-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    $('staff-error').hidden = true;
+    post('/api/auth/staff/login', { username: $('staff-username').value, password: $('staff-password').value }).then(function (r) {
+      if (r.status === 200) window.location.href = r.body.landing;
+      else show($('staff-error'), 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+    });
+  });
+})();
+</script>

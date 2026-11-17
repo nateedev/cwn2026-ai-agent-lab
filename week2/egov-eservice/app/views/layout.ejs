@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> · e-Service เทศบาลนครตัวอย่าง</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<%
+  const roleLabel = { citizen: 'ประชาชน', officer: 'เจ้าหน้าที่', head: 'หัวหน้าฝ่าย', executive: 'ผู้บริหาร', auditor: 'ผู้ตรวจสอบภายใน', admin: 'ผู้ดูแลระบบ' };
+  const navs = user ? ({
+    citizen:   [['nav-my-cases', '/citizen', 'คำขอของฉัน']],
+    officer:   [['nav-queue', '/officer/queue', 'คิวงาน']],
+    head:      [['nav-queue', '/officer/queue', 'คิวงาน'], ['nav-approvals', '/head/approvals', 'รออนุมัติ']],
+    executive: [['nav-dashboard', '/dashboard', 'Dashboard']],
+    auditor:   [['nav-audit', '/audit', 'Audit Trail']],
+    admin:     [['nav-admin-services', '/admin/services', 'บริการ'], ['nav-admin-holidays', '/admin/holidays', 'วันหยุด'], ['nav-admin-users', '/admin/users', 'ผู้ใช้']],
+  }[user.role] || []) : [];
+  const hasBell = user && (user.role === 'officer' || user.role === 'head');
+%>
+<% if (user) { %>
+<header data-testid="app-header" class="app-header">
+  <span class="brand">e-Service เทศบาลนครตัวอย่าง</span>
+  <nav aria-label="เมนูหลัก" class="app-nav">
+    <% navs.forEach(function (n) { %><a data-testid="<%= n[0] %>" href="<%= n[1] %>"><%= n[2] %></a><% }) %>
+    <% if (hasBell) { %><a data-testid="nav-bell" href="/notifications">แจ้งเตือน <span data-testid="bell-count"><%= bellCount %></span></a><% } %>
+  </nav>
+  <span class="who">
+    <span data-testid="user-name"><%= user.name %></span>
+    <span data-testid="user-role" data-role="<%= user.role %>"<% if (user.role === 'officer' && user.dept) { %> data-dept="<%= user.dept %>"<% } %>><%= roleLabel[user.role] %></span>
+    <button type="button" data-testid="logout-btn" id="logout-btn">ออกจากระบบ</button>
+  </span>
+</header>
+<% } %>
+<main id="main" class="app-main">
+  <% if (success) { %><div data-testid="action-success" role="status" class="toast ok"><%= success %></div><% } %>
+  <% if (error) { %><div data-testid="action-error" role="alert" class="toast err"><%= error %></div><% } %>
+  <%- body %>
+</main>
+<% if (user) { %>
+<script>
+  document.getElementById('logout-btn').addEventListener('click', function () {
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
+      .finally(function () { window.location.href = '/login'; });
+  });
+</script>
+<% } %>
+</body>
+</html>

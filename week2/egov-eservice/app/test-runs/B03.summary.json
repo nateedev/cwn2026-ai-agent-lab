@@ -1,0 +1,33 @@
+{
+ "total": 51,
+ "passed": 46,
+ "failed": [
+  "TC-SLA-01",
+  "TC-SLA-02",
+  "TC-SLA-03",
+  "TC-NOTI-02",
+  "TC-RBAC-04"
+ ],
+ "details": [
+  {
+   "id": "TC-SLA-01",
+   "brief": "Error: แถว c dueAt=2026-12-07T16:30:00+07:00 | Expected: \"2026-12-08T16:30:00+07:00\" | Received: \"2026-12-07T16:30:00+07:00\""
+  },
+  {
+   "id": "TC-SLA-02",
+   "brief": "Error: expect(locator).toHaveText(expected) failed | Expected: \"8 ธ.ค. 2569 16:30\" | Received: \"7 ธ.ค. 2569 16:30\" | - Expect \"toHaveText\" getByTestId('sla-due') with timeout 7000ms | - waiting for getByTestId('sla-due') | - unexpected value \"7 ธ.ค. 2569 16:30\""
+  },
+  {
+   "id": "TC-SLA-03",
+   "brief": "Error: B 2026-12-04T09:00:00+07:00 | Expected: \"ใกล้ครบกำหนด\" | Received: \"ปกติ\" | - B 2026-12-04T09:00:00+07:00 getByTestId('sla-level') with timeout 7000ms | - waiting for getByTestId('sla-level') | - unexpected value \"ปกติ\""
+  },
+  {
+   "id": "TC-NOTI-02",
+   "brief": "Error: expect(received).toEqual(expected) // deep equality | - Expected  - 1 | + Received  + 0 | -   \"EG-2569-000016|near\","
+  },
+  {
+   "id": "TC-RBAC-04",
+   "brief": "Error: expect(received).toBe(expected) // Object.is equality | Expected: \"2026-12-08T16:30:00+07:00\" | Received: \"2026-12-04T16:30:00+07:00\""
+  }
+ ]
+}

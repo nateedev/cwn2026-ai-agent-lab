@@ -1,0 +1,326 @@
+<style>.err-text{color:#8a1111}.muted{color:#555}.actions{display:flex;flex-wrap:wrap;gap:.5rem}.btn{display:inline-block;padding:.4rem .8rem;border:1px solid #0b3d6b;border-radius:4px;background:#fff;color:#0b3d6b;text-decoration:none}.facts dt{font-weight:700}.facts dd{margin:0 0 .5rem}.qr{display:inline-block;border:1px solid #888;padding:4px}</style>
+<h1>ยื่นคำขอ: <span data-testid="service-name"><%= serviceName %></span></h1>
+<p>ขั้นตอน <strong data-testid="wizard-step" aria-live="polite">1/3 กรอกข้อมูล</strong></p>
+<p id="draft-line"<% if (!draftId) { %> hidden<% } %>>รหัสร่าง <strong data-testid="draft-id"><%= draftId %></strong></p>
+
+<section id="step1" aria-label="กรอกข้อมูล">
+  <% if (serviceId === 'SV-01') { %>
+  <p><label for="qty">จำนวนฉบับ (1–5)</label><br>
+    <input id="qty" data-testid="qty-input" type="text" inputmode="numeric" autocomplete="off" value="<%= qty == null ? '' : qty %>"<% if (locked) { %> readonly<% } %>></p>
+  <% } else if (serviceId === 'SV-03') { %>
+  <p><label for="area">พื้นที่ (ตร.ม.)</label><br>
+    <input id="area" data-testid="area-input" type="text" inputmode="numeric" autocomplete="off" value="<%= area == null ? '' : area %>"<% if (locked) { %> readonly<% } %>></p>
+  <% } else { %>
+  <p class="muted">บริการนี้ค่าธรรมเนียมคงที่ ไม่ต้องกรอกข้อมูลเพิ่ม</p>
+  <% } %>
+  <p>ค่าธรรมเนียม <strong data-testid="fee-total"><%= feeText %></strong></p>
+  <% if (feeError) { %><p data-testid="fee-error" role="alert" class="err-text"><%= feeError %></p><% } %>
+  <p class="actions">
+    <% if (!locked) { %><button type="button" data-testid="save-draft-btn" id="save-draft">บันทึกร่าง</button><% } %>
+    <button type="button" data-testid="to-upload-btn" id="to-upload"<% if (feeError) { %> disabled<% } %>>ไปแนบเอกสาร</button>
+  </p>
+  <p id="saved-note" role="status" class="muted"></p>
+</section>
+
+<section id="step2" aria-label="แนบเอกสาร" hidden>
+  <p class="muted">แนบไฟล์ PDF, JPG หรือ PNG ขนาดไม่เกิน 5 MB รวมไม่เกิน 5 ไฟล์ · ✱ = บังคับ</p>
+  <div id="upload-fields"></div>
+  <div id="upload-error-slot"></div>
+  <ul id="file-list" aria-label="ไฟล์ที่แนบแล้ว"></ul>
+  <div id="missing-slot"></div>
+  <p class="actions">
+    <button type="button" id="back-to-1">กลับไปแก้ข้อมูล</button>
+    <button type="button" data-testid="to-payment-btn" id="to-payment" disabled>ไปชำระเงิน</button>
+  </p>
+</section>
+
+<section id="step3" aria-label="ชำระเงิน" hidden>
+  <p>ยอดที่ต้องชำระ <strong data-testid="payment-amount"></strong></p>
+  <div id="pay-error-slot"></div>
+  <p class="actions">
+    <button type="button" data-testid="create-qr-btn" id="create-qr">สร้าง QR</button>
+  </p>
+  <div id="qr-block" hidden>
+    <div data-testid="qr-image" role="img" aria-label="QR PromptPay จำลอง" class="qr">
+      <svg viewBox="0 0 21 21" width="160" height="160" shape-rendering="crispEdges" aria-hidden="true"><rect width="21" height="21" fill="#fff"/><g id="qr-cells" fill="#000"></g></svg>
+    </div>
+    <p>เลขอ้างอิง <strong data-testid="qr-ref"></strong></p>
+    <p><span data-testid="qr-expires"></span></p>
+    <p>สถานะ <strong data-testid="payment-status"></strong></p>
+    <div id="expired-slot"></div>
+    <p class="actions"><button type="button" data-testid="refresh-payment-btn" id="refresh-payment">ตรวจสอบการชำระเงิน</button></p>
+  </div>
+  <div id="receipt-block" hidden>
+    <h2>ชำระเงินสำเร็จ</h2>
+    <p>เลขคำขอ <strong data-testid="submitted-case-no"></strong></p>
+    <p>เลขใบเสร็จ <strong data-testid="receipt-no"></strong></p>
+    <p>ยอดชำระ <strong data-testid="receipt-amount"></strong></p>
+    <p>เวลาชำระ <span data-testid="receipt-paid-at"></span></p>
+    <p><a class="btn" role="button" data-testid="go-case-btn" id="go-case" href="#">ดูคำขอ</a></p>
+  </div>
+  <p><button type="button" id="back-to-2">กลับไปแนบเอกสาร</button></p>
+</section>
+
+<p><a href="/citizen">กลับรายการคำขอ</a></p>
+
+<script id="boot" type="application/json"><%- boot %></script>
+<script>
+(function () {
+  var B = JSON.parse(document.getElementById('boot').textContent);
+  var q = function (id) { return document.querySelector('[data-testid="' + id + '"]'); };
+  var $ = function (id) { return document.getElementById(id); };
+  var TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  function p2(n) { return (n < 10 ? '0' : '') + n; }
+  function thai(isoStr) {
+    var t = new Date(new Date(isoStr).getTime() + 7 * 3600 * 1000);
+    return t.getUTCDate() + ' ' + TH[t.getUTCMonth()] + ' ' + (t.getUTCFullYear() + 543) + ' ' + p2(t.getUTCHours()) + ':' + p2(t.getUTCMinutes());
+  }
+  function baht(n) { return '฿' + Math.round(n).toLocaleString('en-US'); }
+  function api(method, path, body) {
+    var opt = { method: method, credentials: 'same-origin', headers: {} };
+    if (body instanceof FormData) opt.body = body;
+    else if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+    return fetch(path, opt).then(function (r) {
+      if (r.status === 204) return { ok: true, status: 204, j: {} };
+      return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
+    });
+  }
+  // แสดง/ลบองค์ประกอบข้อความที่มี testid (ไม่ render เมื่อไม่มีข้อความ)
+  function setMsg(slot, testid, text, extra) {
+    var el = slot.querySelector('[data-testid="' + testid + '"]');
+    if (!text) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('p'); el.setAttribute('data-testid', testid); el.setAttribute('role', 'alert'); el.className = 'err-text'; slot.appendChild(el); }
+    el.textContent = text;
+    if (extra) Object.keys(extra).forEach(function (k) { el.setAttribute(k, extra[k]); });
+  }
+
+  var S = {
+    draftId: B.draft ? B.draft.id : null,
+    status: B.draft ? B.draft.status : null,
+    files: B.draft ? B.draft.files.slice() : [],
+    fee: B.initial.fee,
+    valid: !B.initial.error,
+    ref: B.payment ? B.payment.ref : null,
+    paid: false,
+    timer: null,
+  };
+  var qty = q('qty-input'), area = q('area-input');
+  var feeSeq = 0;
+
+  function showStep(n) {
+    $('step1').hidden = n !== 1; $('step2').hidden = n !== 2; $('step3').hidden = n !== 3;
+    q('wizard-step').textContent = n === 1 ? '1/3 กรอกข้อมูล' : n === 2 ? '2/3 แนบเอกสาร' : '3/3 ชำระเงิน';
+    if (n !== 3 && S.timer) { clearInterval(S.timer); S.timer = null; }
+  }
+
+  // ─── ขั้น 1: ค่าธรรมเนียม ───
+  function recalc() {
+    var p = new URLSearchParams({ serviceId: B.serviceId });
+    if (qty) p.set('qty', qty.value);
+    if (area) p.set('area', area.value);
+    var my = ++feeSeq;
+    api('GET', '/api/fee?' + p.toString()).then(function (x) {
+      if (my !== feeSeq) return;
+      var slot = $('step1');
+      var errEl = slot.querySelector('[data-testid="fee-error"]');
+      if (x.ok) {
+        S.fee = x.j.fee; S.valid = true; q('fee-total').textContent = baht(x.j.fee);
+        if (errEl) errEl.remove();
+      } else {
+        S.fee = null; S.valid = false; q('fee-total').textContent = '–';
+        if (!errEl) {
+          errEl = document.createElement('p'); errEl.setAttribute('data-testid', 'fee-error'); errEl.setAttribute('role', 'alert'); errEl.className = 'err-text';
+          q('fee-total').parentNode.insertAdjacentElement('afterend', errEl);
+        }
+        errEl.textContent = x.j.message || 'ข้อมูลไม่ถูกต้อง';
+      }
+      q('to-upload-btn').disabled = !S.valid;
+    });
+  }
+  [qty, area].forEach(function (el) { if (el) el.addEventListener('input', recalc); });
+
+  function body() {
+    var b = { serviceId: B.serviceId };
+    if (qty) b.qty = qty.value;
+    if (area) b.areaSqm = area.value;
+    return b;
+  }
+  // สร้างร่าง (ครั้งแรก) หรืออัปเดตร่างเดิม · คืน Promise<boolean>
+  function persist() {
+    if (S.status === 'PENDING_PAYMENT') return Promise.resolve(true); // ร่างรอชำระ: ค่าที่ล็อกแล้ว
+    var req = S.draftId ? api('PUT', '/api/drafts/' + S.draftId, body()) : api('POST', '/api/drafts', body());
+    return req.then(function (x) {
+      if (!x.ok) { $('saved-note').textContent = x.j.message || 'บันทึกไม่สำเร็จ'; return false; }
+      if (!S.draftId) { S.draftId = x.j.draftId; S.status = 'DRAFT'; }
+      S.fee = x.j.fee;
+      q('draft-id').textContent = S.draftId; $('draft-line').hidden = false;
+      return true;
+    });
+  }
+  var saveBtn = $('save-draft');
+  if (saveBtn) saveBtn.addEventListener('click', function () {
+    if (!S.valid) return;
+    persist().then(function (ok) { if (ok) $('saved-note').textContent = 'บันทึกร่างแล้ว'; });
+  });
+  q('to-upload-btn').addEventListener('click', function () {
+    if (!S.valid) return;
+    persist().then(function (ok) { if (ok) { $('saved-note').textContent = ''; buildUploads(); showStep(2); } });
+  });
+
+  // ─── ขั้น 2: แนบเอกสาร ───
+  var built = false;
+  function buildUploads() {
+    renderFiles();
+    if (built) return;
+    built = true;
+    var host = $('upload-fields');
+    B.docs.concat([{ key: 'extra', name: 'เอกสารเพิ่มเติม', required: false }]).forEach(function (d) {
+      var wrap = document.createElement('p');
+      var label = document.createElement('label');
+      label.textContent = d.name + (d.required ? ' ✱' : d.key === 'extra' ? ' (แนบได้หลายไฟล์)' : ' (ไม่บังคับ)') + (d.key === 'plan' ? ' · PDF เท่านั้น' : '');
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.id = 'up-' + d.key; inp.setAttribute('data-testid', 'upload-input-' + d.key);
+      if (d.key === 'extra') inp.multiple = true;
+      label.setAttribute('for', inp.id);
+      inp.addEventListener('change', function () {
+        var list = Array.prototype.slice.call(inp.files || []);
+        inp.value = '';
+        if (list.length) uploadAll(list, d.key);
+      });
+      wrap.appendChild(label); wrap.appendChild(document.createElement('br')); wrap.appendChild(inp);
+      host.appendChild(wrap);
+    });
+  }
+  function uploadAll(list, docKey) {
+    var slot = $('upload-error-slot');
+    setMsg(slot, 'upload-error', '');
+    var chain = Promise.resolve();
+    list.forEach(function (f) {
+      chain = chain.then(function () {
+        var fd = new FormData(); fd.append('docKey', docKey); fd.append('file', f);
+        return api('POST', '/api/drafts/' + S.draftId + '/files', fd).then(function (x) {
+          if (!x.ok) { setMsg(slot, 'upload-error', x.j.message || 'แนบไฟล์ไม่สำเร็จ'); return; }
+          if (docKey !== 'extra') S.files = S.files.filter(function (e) { return e.docKey !== docKey; });
+          S.files.push({ fileId: x.j.fileId, name: x.j.name, docKey: x.j.docKey, size: x.j.size });
+          renderFiles();
+        });
+      });
+    });
+    return chain.then(renderFiles);
+  }
+  function renderFiles() {
+    var ul = $('file-list'); ul.innerHTML = '';
+    S.files.forEach(function (f) {
+      var li = document.createElement('li');
+      li.setAttribute('data-testid', 'file-item'); li.setAttribute('data-name', f.name); li.setAttribute('data-doc-key', f.docKey);
+      li.appendChild(document.createTextNode(f.name + ' '));
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = 'ลบไฟล์'; b.setAttribute('data-testid', 'file-remove-btn');
+      b.setAttribute('aria-label', 'ลบไฟล์ ' + f.name);
+      b.addEventListener('click', function () {
+        api('DELETE', '/api/drafts/' + S.draftId + '/files/' + encodeURIComponent(f.fileId)).then(function (x) {
+          if (x.ok) { S.files = S.files.filter(function (e) { return e.fileId !== f.fileId; }); setMsg($('upload-error-slot'), 'upload-error', ''); renderFiles(); }
+          else setMsg($('upload-error-slot'), 'upload-error', x.j.message || 'ลบไฟล์ไม่สำเร็จ');
+        });
+      });
+      li.appendChild(b); ul.appendChild(li);
+    });
+    var have = {}; S.files.forEach(function (f) { have[f.docKey] = true; });
+    var missing = B.docs.filter(function (d) { return d.required && !have[d.key]; }).map(function (d) { return d.name; });
+    var slot = $('missing-slot');
+    setMsg(slot, 'missing-docs', missing.length ? 'ยังขาดเอกสาร: ' + missing.join(', ') : '');
+    q('to-payment-btn').disabled = missing.length > 0;
+  }
+  $('back-to-1').addEventListener('click', function () { showStep(1); });
+  q('to-payment-btn').addEventListener('click', function () {
+    if (q('to-payment-btn').disabled) return;
+    q('payment-amount').textContent = baht(S.fee != null ? S.fee : (B.draft ? B.draft.fee : 0));
+    showStep(3);
+  });
+  $('back-to-2').addEventListener('click', function () { buildUploads(); showStep(2); });
+
+  // ─── ขั้น 3: ชำระเงิน ───
+  function drawQr(ref) {
+    var g = $('qr-cells'); g.innerHTML = ''; var h = 7;
+    for (var i = 0; i < ref.length; i++) h = (h * 31 + ref.charCodeAt(i)) >>> 0;
+    function finder(x, y) { [[0,0,7,'#000'],[1,1,5,'#fff'],[2,2,3,'#000']].forEach(function (r) {
+      var e = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); e.setAttribute('x', x + r[0]); e.setAttribute('y', y + r[1]);
+      e.setAttribute('width', r[2]); e.setAttribute('height', r[2]); e.setAttribute('fill', r[3]); g.appendChild(e); }); }
+    finder(0, 0); finder(14, 0); finder(0, 14);
+    for (var y = 0; y < 21; y++) for (var x = 0; x < 21; x++) {
+      if ((x < 8 && y < 8) || (x > 12 && y < 8) || (x < 8 && y > 12)) continue;
+      h = (h * 1103515245 + 12345) >>> 0;
+      if ((h >>> 16) & 1) { var e = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); e.setAttribute('x', x); e.setAttribute('y', y); e.setAttribute('width', 1); e.setAttribute('height', 1); g.appendChild(e); }
+    }
+  }
+  function applyPayment(p) {
+    S.ref = p.ref;
+    $('qr-block').hidden = false;
+    drawQr(p.ref);
+    q('qr-ref').textContent = p.ref;
+    var ex = q('qr-expires'); ex.textContent = 'หมดอายุ ' + thai(p.qrExpiresAt); ex.setAttribute('data-iso', p.qrExpiresAt);
+    var ps = q('payment-status');
+    ps.setAttribute('data-status', p.status);
+    ps.textContent = p.status === 'PAID' ? 'ชำระแล้ว' : p.status === 'EXPIRED' ? 'QR หมดอายุ' : 'รอชำระ';
+    var slot = $('expired-slot');
+    var regen = slot.querySelector('[data-testid="regenerate-qr-btn"]');
+    if (p.status === 'EXPIRED') {
+      var m = slot.querySelector('[data-testid="qr-expired-msg"]');
+      if (!m) { m = document.createElement('p'); m.setAttribute('data-testid', 'qr-expired-msg'); m.setAttribute('role', 'alert'); m.className = 'err-text'; slot.appendChild(m); }
+      m.textContent = 'QR หมดอายุ กรุณาสร้าง QR ใหม่';
+      if (!regen) {
+        regen = document.createElement('button'); regen.type = 'button'; regen.setAttribute('data-testid', 'regenerate-qr-btn'); regen.textContent = 'สร้าง QR ใหม่';
+        regen.addEventListener('click', createQr); slot.appendChild(regen);
+      }
+    } else { slot.innerHTML = ''; }
+    $('create-qr').hidden = true;
+    if (p.status === 'PAID') onPaid(p);
+  }
+  function onPaid(p) {
+    S.paid = true;
+    if (S.timer) { clearInterval(S.timer); S.timer = null; }
+    $('create-qr').hidden = true; $('expired-slot').innerHTML = '';
+    $('receipt-block').hidden = false;
+    q('submitted-case-no').textContent = p.caseNo || '';
+    q('receipt-no').textContent = p.receiptNo || '';
+    q('receipt-amount').textContent = baht(p.amount);
+    var go = $('go-case'); go.href = '/citizen/cases/' + encodeURIComponent(p.caseNo || '');
+    api('GET', '/api/cases/' + encodeURIComponent(p.caseNo || '')).then(function (x) {
+      if (x.ok && x.j.paidAt) { var el = q('receipt-paid-at'); el.textContent = thai(x.j.paidAt); el.setAttribute('data-iso', x.j.paidAt); }
+    });
+  }
+  function createQr() {
+    setMsg($('pay-error-slot'), 'action-error', '');
+    api('POST', '/api/drafts/' + S.draftId + '/payment').then(function (x) {
+      if (!x.ok) {
+        var t = x.j.message || 'สร้าง QR ไม่สำเร็จ';
+        setMsg($('pay-error-slot'), x.j.code === 'MISSING_DOCS' ? 'missing-docs' : 'action-error', t);
+        return;
+      }
+      S.status = 'PENDING_PAYMENT';
+      applyPayment({ ref: x.j.ref, status: 'PENDING', qrExpiresAt: x.j.qrExpiresAt, amount: x.j.amount });
+      startPolling();
+    });
+  }
+  function refresh() {
+    if (!S.ref || S.paid) return Promise.resolve();
+    return api('GET', '/api/payments/' + encodeURIComponent(S.ref)).then(function (x) {
+      if (x.ok) applyPayment({ ref: x.j.ref, status: x.j.status, qrExpiresAt: x.j.qrExpiresAt, amount: x.j.amount, caseNo: x.j.caseNo, receiptNo: x.j.receiptNo });
+    });
+  }
+  function startPolling() { if (!S.timer) S.timer = setInterval(refresh, 4000); }
+  $('create-qr').addEventListener('click', createQr);
+  $('refresh-payment').addEventListener('click', refresh);
+
+  // ─── เริ่มต้น ───
+  recalc();
+  if (B.draft && B.draft.status === 'PENDING_PAYMENT' && B.payment) {
+    buildUploads();
+    q('payment-amount').textContent = baht(B.draft.fee);
+    showStep(3);
+    applyPayment({ ref: B.payment.ref, status: B.payment.status, qrExpiresAt: B.payment.qrExpiresAt, amount: B.draft.fee });
+    refresh().then(function () { if (!S.paid) startPolling(); });
+  } else {
+    showStep(1);
+  }
+})();
+</script>

@@ -1,0 +1,115 @@
+<style>.err-text{color:#8a1111}.muted{color:#555}.actions{display:flex;flex-wrap:wrap;gap:.5rem}.btn{display:inline-block;padding:.4rem .8rem;border:1px solid #0b3d6b;border-radius:4px;background:#fff;color:#0b3d6b;text-decoration:none}.facts dt{font-weight:700}.facts dd{margin:0 0 .5rem}.qr{display:inline-block;border:1px solid #888;padding:4px}</style>
+<% const closedLike = ['REJECTED','CANCELLED'].includes(c.status); %>
+<h1>คำขอ <span data-testid="case-no"><%= c.caseNo %></span></h1>
+
+<dl class="facts">
+  <dt>สถานะ</dt><dd data-testid="case-status" data-status="<%= c.status %>"><%= c.statusText %></dd>
+  <dt>บริการ</dt><dd data-testid="case-service"><%= c.serviceText %></dd>
+  <% if (c.stepText) { %><dt>ขั้นตอน</dt><dd data-testid="case-step"><%= c.stepText %></dd><% } %>
+  <dt>ค่าธรรมเนียม</dt><dd data-testid="case-fee"><%= c.feeText %></dd>
+  <dt>กำหนดเสร็จ</dt><dd data-testid="sla-due" data-iso="<%= c.dueIso %>"><%= c.dueText %></dd>
+  <dt>ระดับเตือน</dt><dd data-testid="sla-level" data-level="<%= c.level %>"><%= c.levelText %></dd>
+  <% if (c.closedIso && (c.status === 'COMPLETED' || c.status === 'REJECTED')) { %>
+    <dt>ปิดงานเมื่อ</dt><dd data-testid="closed-at" data-iso="<%= c.closedIso %>"><%= c.closedText %></dd>
+  <% } %>
+  <dt>เลขบัตรประชาชน</dt><dd data-testid="case-id-full"><%= c.idFull %></dd>
+</dl>
+
+<% if (closedLike) { %><p data-testid="no-refund-note">ค่าธรรมเนียมที่ชำระแล้วไม่คืน</p><% } %>
+
+<% if (c.status === 'NEED_FIX') { %>
+<section aria-labelledby="fix-h">
+  <h2 id="fix-h">รอแก้ไขเอกสาร</h2>
+  <p>เหตุผลที่ถูกตีกลับ: <span data-testid="return-reason-display"><%= c.reason %></span></p>
+  <% if (c.fixIso) { %><p>ส่งแก้ไขภายใน: <span data-testid="fix-deadline" data-iso="<%= c.fixIso %>"><%= c.fixText %></span></p><% } %>
+  <p><label>แนบไฟล์ใหม่ (ไม่บังคับ) <input type="file" data-testid="fix-upload-input" id="fix-file"></label></p>
+  <p><button type="button" data-testid="submit-fix-btn" id="submit-fix">ส่งแก้ไข</button></p>
+</section>
+<% } %>
+
+<% if (c.status === 'SUBMITTED') { %>
+<section aria-labelledby="cancel-h">
+  <h2 id="cancel-h">ยกเลิกคำขอ</h2>
+  <button type="button" data-testid="cancel-case-btn" id="cancel-btn">ยกเลิกคำขอ</button>
+  <div id="cancel-box" role="alertdialog" aria-label="ยืนยันการยกเลิก" hidden>
+    <p data-testid="cancel-confirm-text">ค่าธรรมเนียมที่ชำระแล้วไม่คืน</p>
+    <button type="button" data-testid="confirm-cancel-btn" id="confirm-cancel">ยืนยันยกเลิกคำขอ</button>
+    <button type="button" id="dismiss-cancel">ไม่ยกเลิก</button>
+  </div>
+</section>
+<% } %>
+
+<% if (c.docNo) { %>
+<section aria-labelledby="doc-h">
+  <h2 id="doc-h">เอกสารดิจิทัล</h2>
+  <p>เลขเอกสาร <span data-testid="doc-no"><%= c.docNo %></span></p>
+  <% if (c.verifyCode) { %>
+  <p>รหัสตรวจสอบ <span data-testid="verify-code"><%= c.verifyCode %></span></p>
+  <p data-testid="doc-qr" data-url="<%= c.verifyUrl %>">QR ตรวจสอบเอกสาร: <a href="<%= c.verifyUrl %>"><%= c.verifyUrl %></a></p>
+  <% } %>
+  <p><a class="btn" role="button" data-testid="download-doc-btn" href="/api/documents/<%= c.docNo %>/pdf" download>ดาวน์โหลดเอกสาร</a></p>
+</section>
+<% } %>
+
+<section aria-labelledby="files-h">
+  <h2 id="files-h">เอกสารแนบ</h2>
+  <% if (!files.length) { %><p class="muted">ไม่มีเอกสารแนบ</p><% } else { %>
+  <ul>
+    <% files.forEach(function (f) { %>
+    <li data-testid="doc-item" data-name="<%= f.name %>" data-file-id="<%= f.id %>">
+      <%= f.name %> <a data-testid="doc-download-link" href="/api/files/<%= f.id %>">เปิดไฟล์</a>
+    </li>
+    <% }) %>
+  </ul>
+  <% } %>
+</section>
+
+<section aria-labelledby="tl-h">
+  <h2 id="tl-h">ไทม์ไลน์</h2>
+  <ol data-testid="case-timeline">
+    <% events.forEach(function (e) { %>
+    <li data-testid="timeline-item" data-iso="<%= e.iso %>"><%= e.text %> · <%= e.label %><% if (e.note) { %> · <%= e.note %><% } %></li>
+    <% }) %>
+  </ol>
+</section>
+
+<p><a href="/citizen">กลับรายการคำขอ</a></p>
+
+<script>
+(function () {
+  var caseNo = <%- JSON.stringify(c.caseNo).replace(/</g, '\\u003c') %>;
+  function fail(j) {
+    var box = document.querySelector('[data-testid="action-error"]');
+    if (!box) {
+      box = document.createElement('div'); box.setAttribute('data-testid', 'action-error'); box.setAttribute('role', 'alert'); box.className = 'toast err';
+      document.getElementById('main').insertBefore(box, document.getElementById('main').firstChild);
+    }
+    box.textContent = (j && j.message) || 'เกิดข้อผิดพลาด';
+  }
+  function post(path, body) {
+    return fetch('/api/cases/' + encodeURIComponent(caseNo) + path, { method: 'POST', credentials: 'same-origin', body: body })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); });
+  }
+  var cancelBtn = document.getElementById('cancel-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', function () { document.getElementById('cancel-box').hidden = false; document.getElementById('confirm-cancel').focus(); });
+    document.getElementById('dismiss-cancel').addEventListener('click', function () { document.getElementById('cancel-box').hidden = true; });
+    document.getElementById('confirm-cancel').addEventListener('click', function () {
+      post('/cancel').then(function (x) { if (x.ok) location.reload(); else { fail(x.j); document.getElementById('cancel-box').hidden = true; } });
+    });
+  }
+  var fixBtn = document.getElementById('submit-fix');
+  if (fixBtn) {
+    fixBtn.addEventListener('click', function () {
+      var fd; var inp = document.getElementById('fix-file');
+      if (inp.files && inp.files[0]) { fd = new FormData(); fd.append('docKey', 'extra'); fd.append('file', inp.files[0]); }
+      fixBtn.disabled = true;
+      post('/resubmit', fd).then(function (x) {
+        if (x.ok) return location.reload();
+        fail(x.j); fixBtn.disabled = false;
+        if (x.j.code === 'FIX_WINDOW_EXPIRED') setTimeout(function () { location.reload(); }, 1500);
+      });
+    });
+  }
+})();
+</script>

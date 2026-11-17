@@ -1,0 +1,184 @@
+{
+ "goal": "เว็บ e-Service กลางของเทศบาลสมมติ ตาม /workspace/egov-brief (README, REQUIREMENTS, CONTRACT, TEST-DATA, DECISIONS ครบทุกข้อ) Node 22 + TypeScript + Express + EJS + PostgreSQL 16 รันด้วย docker compose คำสั่งเดียว รองรับ TEST_MODE=1 และ BUG_MODE ตาม BUGS.md พร้อมชุด Playwright ครบ 51 TC ใน TEST-PLAN.md",
+ "name": "egov-eservice",
+ "blocks": [
+  {
+   "id": "B01",
+   "title": "โครงโปรเจกต์ + compose + DB + test hook",
+   "size": "L",
+   "depends_on": [],
+   "skill": "yolo",
+   "difficulty": 2,
+   "output": "docker-compose.yml",
+   "done": "docker compose up เปิดเว็บ+PostgreSQL ได้ /api/health ตอบ 200 และเมื่อ TEST_MODE=1 POST /api/test/reset กับ PUT /api/test/clock ทำงานตาม CONTRACT §8 (นาฬิกาเริ่ม 2026-12-01T09:00:00+07:00)",
+   "detail": "อ่าน README, CONTRACT (§0,§1,§6.6,§8), REQUIREMENTS §3-4, DECISIONS. สร้าง package.json, tsconfig, Dockerfile, docker-compose.yml (web+db), src/app.ts, src/db/schema.sql ครบทุกตาราง, src/lib/clock.ts (นาฬิกาทดสอบ Asia/Bangkok ห้ามใช้เวลาเครื่องในกฎธุรกิจ), src/lib/bugmode.ts (isBug('B03')), src/routes/test.ts, views/layout.ejs และ testid ส่วนกลาง §2.1. ให้ reset เรียก src/db/seed.ts ซึ่งบล็อก B02 จะเขียน (ทำ stub ไว้) · src/app.ts ต้องโหลด router ทุกไฟล์ใน src/routes/ อัตโนมัติ (บล็อกอื่นแค่เพิ่มไฟล์ route ของตัวเอง ห้ามแก้ app.ts และ schema.sql ถ้าขาดตาราง/คอลัมน์ให้จดใน NOTES-<บล็อก>.md ให้ B13 รวม)"
+  },
+  {
+   "id": "B02",
+   "title": "ข้อมูล seed ตาม TEST-DATA",
+   "size": "M",
+   "depends_on": [
+    "B01"
+   ],
+   "skill": "yolo",
+   "difficulty": 2,
+   "output": "src/db/seed.ts",
+   "done": "หลัง reset มีผู้ใช้ บริการ วันหยุด คำขอ และไฟล์ทดสอบครบตรง TEST-DATA ทุกค่า",
+   "detail": "อ่าน TEST-DATA ทั้งไฟล์, CONTRACT §3-4, schema.sql ของ B01. เขียนเฉพาะ src/db/seed.ts และ fixtures/ ห้ามแก้ schema (ถ้าขาดคอลัมน์ให้จดใน NOTES-B02.md)"
+  },
+  {
+   "id": "B03",
+   "title": "ล็อกอิน ThaiD จำลอง + สมัคร + RBAC",
+   "size": "M",
+   "depends_on": [
+    "B01"
+   ],
+   "skill": "yolo",
+   "difficulty": 2,
+   "output": "src/routes/auth.ts",
+   "done": "/login /register และ SSO เจ้าหน้าที่ทำงานตาม CONTRACT §2.2-2.3,§6.1 checksum เลขบัตร OTP 123456 ผิด 3 ครั้งล็อก 15 นาที middleware สิทธิ์ตามบทบาท",
+   "detail": "อ่าน REQUIREMENTS (FR/BR ด้านยืนยันตัวตน), CONTRACT §2.2,§2.3,§5,§6.1, TEST-DATA ส่วนผู้ใช้. เขียน src/routes/auth.ts, src/lib/rbac.ts, views/login.ejs, views/register.ejs"
+  },
+  {
+   "id": "B04",
+   "title": "กฎค่าธรรมเนียม + SLA วันทำการ",
+   "size": "M",
+   "depends_on": [
+    "B01"
+   ],
+   "skill": "review",
+   "worker": "yolo",
+   "difficulty": 3,
+   "output": "src/rules/fee-sla.ts",
+   "done": "ฟังก์ชันคำนวณค่าธรรมเนียม SV-01/02/03, กำหนดเสร็จตามวันทำการ+วันหยุด, หยุดนับระหว่างรอแก้ไข, ระดับเตือน และตัดเวลา 16:30 ตรง BR ทุกค่าขอบ พร้อม unit test ผ่าน",
+   "detail": "อ่าน REQUIREMENTS §2 (BR ทั้งหมดที่มีตัวเลข), DECISIONS, CONTRACT §4.2, TEST-PLAN หมวด FEE/SLA/DASH-04 เพื่อดูค่าขอบ. เขียน src/rules/fee-sla.ts + src/rules/fee-sla.test.ts เท่านั้น ใช้ clock.ts"
+  },
+  {
+   "id": "B05",
+   "title": "ประชาชน: ร่าง ยื่น อัปโหลด",
+   "size": "L",
+   "depends_on": [
+    "B03",
+    "B04"
+   ],
+   "skill": "yolo",
+   "difficulty": 2,
+   "output": "src/routes/citizen.ts",
+   "done": "/citizen และ /citizen/new/:service ยื่นได้ครบ 3 บริการ ตรวจเอกสารบังคับ ขนาด/จำนวน/ชนิดไฟล์จากเนื้อไฟล์ ร่างและยกเลิกได้ ข้อความ error ตรง CONTRACT §5",
+   "detail": "อ่าน CONTRACT §2.4-2.6,§5,§6.2,§6.7, REQUIREMENTS ส่วนยื่นคำขอ/อัปโหลด. เขียน src/routes/citizen.ts, src/lib/upload.ts, views/citizen/* · รอบก่อน timeout: ทำต่อจากไฟล์ที่มีอยู่แล้ว (src/routes/citizen.ts, src/lib/upload.ts, views/citizen/*) อ่านก่อนแล้วเติมส่วนที่ขาด ห้ามเริ่มใหม่ทั้งหมด",
+   "timeout": 1800
+  },
+  {
+   "id": "B06",
+   "title": "ชำระเงิน PromptPay จำลอง + เลขคำขอ",
+   "size": "M",
+   "depends_on": [
+    "B05"
+   ],
+   "skill": "yolo",
+   "difficulty": 2,
+   "output": "src/routes/payment.ts",
+   "done": "QR อายุ 15:00 ยอดตรง callback ซ้ำไม่จ่ายซ้ำ ชำระพร้อมกันได้เลขไม่ซ้ำ เลขคำขอข้ามปีถูก POST /api/test/payments/:ref/pay ทำงาน",
+   "detail": "อ่าน CONTRACT §6.2,§8, REQUIREMENTS ส่วนชำระเงิน, TEST-PLAN หมวด PAY (เพื่อเข้าใจกฎ). เขียน src/routes/payment.ts, src/lib/caseno.ts",
+   "timeout": 1800
+  },
+  {
+   "id": "B07",
+   "title": "เจ้าหน้าที่/หัวหน้า: คิว workflow แจ้งเตือน",
+   "size": "L",
+   "depends_on": [
+    "B05"
+   ],
+   "skill": "yolo",
+   "difficulty": 2,
+   "output": "src/routes/officer.ts",
+   "done": "/officer/queue /head/approvals /notifications ทำงาน ลำดับคิวและแผนก รับเรื่องซ้อนไม่ได้ งานในมือ ≤10 ตีกลับ ≤2 เหตุผล ≥10 ตัว แก้ไข 168 ชม. แจ้งเตือนไม่ซ้ำตามระดับ ครบ 3 บริการ · ดู/ดาวน์โหลดไฟล์แนบตามสิทธิ์ FR-29",
+   "detail": "อ่าน REQUIREMENTS §4 แผนภาพสถานะ, CONTRACT §2.6-2.8,§2.12,§6.3, DECISIONS. เขียน src/routes/officer.ts, src/routes/head.ts, src/lib/workflow.ts, src/lib/notify.ts, views/officer/*, views/head/* · รวม FR-29: เจ้าหน้าที่/หัวหน้าเปิดดูและดาวน์โหลดไฟล์แนบตามสิทธิ์ (officer แผนกตนขั้นปัจจุบันหรือเคยผ่าน · head ทุกแผนก · citizen ของตัวเอง · executive/auditor/admin ได้ 403) ตาม CONTRACT",
+   "timeout": 1800
+  },
+  {
+   "id": "B08",
+   "title": "ออกเอกสาร HMAC + /verify",
+   "size": "M",
+   "depends_on": [
+    "B07"
+   ],
+   "skill": "yolo",
+   "difficulty": 2,
+   "output": "src/routes/docs.ts",
+   "done": "ออกเอกสารดิจิทัลเซ็น HMAC-SHA256 /verify/:code แสดงถูกต้อง/หมดอายุ/ลายเซ็นไม่ตรงตาม CONTRACT §2.13",
+   "detail": "อ่าน CONTRACT §2.13,§6.4, REQUIREMENTS ส่วนเอกสาร. เขียน src/routes/docs.ts, src/lib/sign.ts, views/verify.ejs",
+   "timeout": 1800
+  },
+  {
+   "id": "B09",
+   "title": "Dashboard + ส่งออก Excel/PDF",
+   "size": "M",
+   "depends_on": [
+    "B04"
+   ],
+   "skill": "review",
+   "worker": "yolo",
+   "difficulty": 3,
+   "output": "src/routes/dashboard.ts",
+   "done": "/dashboard ตัวเลขเริ่มต้นและย้อนหลังตรง TEST-PLAN DASH-01/02 ทันกำหนดตัดที่ 16:30:00 ส่งออก Excel/PDF เท่าหน้าจอ ตาม CONTRACT §2.9,§7",
+   "detail": "อ่าน REQUIREMENTS BR ด้าน Dashboard, CONTRACT §2.9,§6.4,§7, TEST-DATA, schema.sql. เขียน src/routes/dashboard.ts, src/lib/stats.ts, views/dashboard.ejs ใช้ fee-sla.ts"
+  },
+  {
+   "id": "B10",
+   "title": "Audit + PDPA + Admin",
+   "size": "M",
+   "depends_on": [
+    "B03"
+   ],
+   "skill": "yolo",
+   "difficulty": 2,
+   "output": "src/routes/audit-admin.ts",
+   "done": "/audit กรองวันเวลาไทย แก้/ลบได้ 405 เลขบัตรปิดบังบนจอและ JSON แสดงเต็มต้องมีเหตุผล+audit เข้ารหัสข้อมูลส่วนบุคคล /admin/* ตามช่วงค่าที่ยอมรับ · ส่งออก CSV ของ audit ได้ (FR-24)",
+   "detail": "อ่าน CONTRACT §2.10,§2.11,§6.4,§6.5,§6.8, REQUIREMENTS ส่วน PDPA/Audit/Admin. เขียน src/routes/audit-admin.ts, src/lib/audit.ts, src/lib/pdpa.ts, views/audit.ejs, views/admin/* · รวม FR-24: ส่งออก Audit Trail เป็น CSV (อ่านอย่างเดียว) ตาม CONTRACT"
+  },
+  {
+   "id": "B11",
+   "title": "Playwright ชุด 1 (AUTH–SLA)",
+   "size": "L",
+   "depends_on": [],
+   "skill": "yolo",
+   "difficulty": 2,
+   "output": "tests/e2e/part1.spec.ts",
+   "done": "มี test ครบทุก TC หมวด AUTH FEE SUBMIT UPLOAD PAY QUEUE SLA ตามการ์ดใน TEST-PLAN ทุก TC เริ่มด้วย reset และล็อกอินใหม่",
+   "detail": "อ่านได้เฉพาะ TEST-PLAN, CONTRACT, TEST-DATA ห้ามอ่านโค้ดเว็บ. เขียน tests/e2e/part1.spec.ts, tests/e2e/helpers.ts, playwright.config.ts (baseURL จาก env)"
+  },
+  {
+   "id": "B12",
+   "title": "Playwright ชุด 2 (NOTI–NFR)",
+   "size": "L",
+   "depends_on": [],
+   "skill": "yolo",
+   "difficulty": 2,
+   "output": "tests/e2e/part2.spec.ts",
+   "done": "มี test ครบทุก TC หมวด NOTI WORKFLOW DOC PDPA DASH AUDIT RBAC NFR ตามการ์ดใน TEST-PLAN ผลที่คาดหวังตรงการ์ดทุกตัว",
+   "detail": "อ่านได้เฉพาะ TEST-PLAN, CONTRACT, TEST-DATA ห้ามอ่านโค้ดเว็บ. เขียน tests/e2e/part2.spec.ts และ tests/e2e/helpers2.ts เท่านั้น (ห้ามแก้ helpers.ts ของ B11)"
+  },
+  {
+   "id": "B13",
+   "title": "รวม + Playwright เต็ม + BUG_MODE",
+   "size": "L",
+   "depends_on": [
+    "B02",
+    "B06",
+    "B08",
+    "B09",
+    "B10",
+    "B11",
+    "B12"
+   ],
+   "skill": "yolo",
+   "difficulty": 3,
+   "output": "TEST-RESULTS.md",
+   "exclusive": true,
+   "done": "TEST_MODE=1 รัน Playwright ผ่าน 51/51 และ BUG_MODE=B01..B12 ทีละตัว TC ที่ BUGS.md ระบุล้ม บันทึกใน TEST-RESULTS.md",
+   "detail": "อ่าน BUGS.md, TEST-PLAN. ฝังบั๊กทั้ง 12 ตาม BUGS.md ผ่าน isBug(). ถ้า test ล้มให้จำแนก เว็บผิด/test ผิด/แผนผิด ห้ามแก้ผลที่คาดหวังให้ตรงหน้าจอ แผนผิดให้จดเป็นคำถามถึง TA · สร้าง playwright.config.ts ที่ราก app/ (testDir tests/e2e, baseURL จาก env BASE_URL ค่าเริ่มต้น http://localhost:3000, workers 1) เพราะ B11 ไม่ได้สร้าง",
+   "timeout": 3600
+  }
+ ]
+}

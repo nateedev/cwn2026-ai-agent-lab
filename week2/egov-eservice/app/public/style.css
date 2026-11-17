@@ -1,0 +1,17 @@
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, "Noto Sans Thai", "Sarabun", sans-serif; color: #1a1a1a; background: #f6f7f9; line-height: 1.5; overflow-wrap: anywhere; }
+.app-header { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; padding: .6rem 1rem; background: #0b3d6b; color: #fff; }
+.app-header a { color: #fff; text-decoration: underline; }
+.app-header .brand { font-weight: 700; }
+.app-nav { display: flex; flex-wrap: wrap; gap: .75rem; flex: 1; }
+.who { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.app-main { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+button, input, select, textarea { font: inherit; max-width: 100%; }
+button { cursor: pointer; padding: .4rem .8rem; }
+button:disabled { cursor: not-allowed; opacity: .6; }
+table { width: 100%; border-collapse: collapse; display: block; overflow-x: auto; }
+th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #d5d9df; }
+.toast { padding: .6rem .8rem; border-radius: 4px; margin-bottom: 1rem; }
+.toast.ok { background: #e3f4e6; color: #12501f; }
+.toast.err { background: #fde7e7; color: #8a1111; }
+:focus-visible { outline: 3px solid #ffbf47; outline-offset: 2px; }

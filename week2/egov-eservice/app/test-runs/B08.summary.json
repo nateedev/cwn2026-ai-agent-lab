@@ -1,0 +1,13 @@
+{
+ "total": 51,
+ "passed": 50,
+ "failed": [
+  "TC-QUEUE-02"
+ ],
+ "details": [
+  {
+   "id": "TC-QUEUE-02",
+   "brief": "Error: expect(locator).toHaveText(expected) failed | Expected: \"มีเจ้าหน้าที่รับเรื่องนี้แล้ว\" | Received: \"\" | - Expect \"toHaveText\" getByTestId('action-error') with timeout 7000ms | - waiting for getByTestId('action-error') | - unexpected value \"\""
+  }
+ ]
+}

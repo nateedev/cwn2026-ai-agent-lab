@@ -1,0 +1,18 @@
+{
+ "total": 51,
+ "passed": 49,
+ "failed": [
+  "TC-PDPA-03",
+  "TC-AUDIT-01"
+ ],
+ "details": [
+  {
+   "id": "TC-PDPA-03",
+   "brief": "Error: expect(received).toBe(expected) // Object.is equality | Expected: 1 | Received: 0 | - Timeout 7000ms exceeded while waiting on the predicate"
+  },
+  {
+   "id": "TC-AUDIT-01",
+   "brief": "Error: expect(received).toBe(expected) // Object.is equality | Expected: 16 | Received: 15 | - Timeout 7000ms exceeded while waiting on the predicate"
+  }
+ ]
+}

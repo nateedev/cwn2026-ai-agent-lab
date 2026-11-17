@@ -1,0 +1,50 @@
+<style>.err-text{color:#8a1111}.muted{color:#555}.actions{display:flex;flex-wrap:wrap;gap:.5rem}.btn{display:inline-block;padding:.4rem .8rem;border:1px solid #0b3d6b;border-radius:4px;background:#fff;color:#0b3d6b;text-decoration:none}.facts dt{font-weight:700}.facts dd{margin:0 0 .5rem}.qr{display:inline-block;border:1px solid #888;padding:4px}</style>
+<h1 data-testid="citizen-welcome">สวัสดี <%= welcome %></h1>
+
+<section aria-labelledby="start-h">
+  <h2 id="start-h">เริ่มบริการ</h2>
+  <p class="actions">
+    <% ['SV-01','SV-02','SV-03'].forEach(function (s) { %>
+      <a class="btn" role="button" data-testid="start-service-<%= s %>" href="/citizen/new/<%= s %>"><%= SERVICE_NAMES[s] %></a>
+    <% }) %>
+  </p>
+</section>
+
+<section aria-labelledby="drafts-h">
+  <h2 id="drafts-h">ร่างและรอชำระเงิน</h2>
+  <% if (!drafts.length) { %><p class="muted">ไม่มีร่าง</p><% } else { %>
+  <table>
+    <thead><tr><th>รหัสร่าง</th><th>บริการ</th><th>สถานะ</th><th></th></tr></thead>
+    <tbody>
+    <% drafts.forEach(function (r) { %>
+      <tr data-testid="my-draft-row" data-draft-id="<%= r.id %>" data-status="<%= r.status %>">
+        <td data-testid="row-draft-id"><%= r.id %></td>
+        <td data-testid="row-service"><%= r.service %></td>
+        <td data-testid="row-status" data-status="<%= r.status %>"><%= r.statusText %></td>
+        <td><a class="btn" role="button" data-testid="open-draft-btn" href="/citizen/new/<%= r.serviceId %>?draft=<%= r.id %>">เปิดร่าง</a></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+</section>
+
+<section aria-labelledby="cases-h">
+  <h2 id="cases-h">คำขอของฉัน</h2>
+  <% if (!cases.length) { %><p class="muted">ยังไม่มีคำขอ เลือกบริการด้านบนเพื่อเริ่มยื่นคำขอ</p><% } else { %>
+  <table>
+    <thead><tr><th>เลขคำขอ</th><th>บริการ</th><th>สถานะ</th><th>กำหนดเสร็จ</th><th>ระดับเตือน</th></tr></thead>
+    <tbody>
+    <% cases.forEach(function (r) { %>
+      <tr data-testid="my-case-row" data-case-no="<%= r.caseNo %>" data-status="<%= r.status %>">
+        <td><a data-testid="row-case-no" href="/citizen/cases/<%= r.caseNo %>"><%= r.caseNo %></a></td>
+        <td data-testid="row-service"><%= r.service %></td>
+        <td data-testid="row-status" data-status="<%= r.status %>"><%= r.statusText %></td>
+        <td data-testid="row-due" data-iso="<%= r.dueIso %>"><%= r.dueText %></td>
+        <td data-testid="row-sla-level" data-level="<%= r.level %>"><%= SLA_LEVEL_TEXT[r.level] %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+</section>

@@ -1,0 +1,13 @@
+{
+ "total": 51,
+ "passed": 50,
+ "failed": [
+  "TC-WORKFLOW-04"
+ ],
+ "details": [
+  {
+   "id": "TC-WORKFLOW-04",
+   "brief": "Error: expect(locator).toHaveCount(expected) failed | Expected: 0 | Received: 1 | - Expect \"toHaveCount\" getByTestId('return-btn') with timeout 7000ms | - waiting for getByTestId('return-btn') | - unexpected value \"1\""
+  }
+ ]
+}

@@ -1,0 +1,38 @@
+<h1>ลงทะเบียนใช้งานครั้งแรก</h1>
+<form id="reg-form" novalidate>
+  <label for="reg-name">ชื่อ-สกุล (จาก ThaiD)</label>
+  <input id="reg-name" data-testid="reg-name" type="text" value="<%= regName %>" readonly>
+
+  <label for="reg-mobile">เบอร์มือถือ (บังคับ)</label>
+  <input id="reg-mobile" data-testid="reg-mobile" name="mobile" type="text" inputmode="numeric" autocomplete="tel">
+  <p data-testid="reg-error-mobile" role="alert" hidden></p>
+
+  <label for="reg-email">อีเมล (ไม่บังคับ)</label>
+  <input id="reg-email" data-testid="reg-email" name="email" type="text" autocomplete="email">
+
+  <label><input type="checkbox" data-testid="reg-consent" id="reg-consent"> ข้าพเจ้ายินยอมให้ประมวลผลข้อมูลส่วนบุคคล (PDPA)</label>
+  <p data-testid="reg-error-consent" role="alert" hidden></p>
+
+  <button type="submit" data-testid="reg-submit">ลงทะเบียน</button>
+</form>
+<script>
+(function () {
+  var $ = function (t) { return document.querySelector('[data-testid="' + t + '"]'); };
+  $('reg-name').addEventListener('keydown', function (e) { e.preventDefault(); });
+  document.getElementById('reg-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    $('reg-error-mobile').hidden = true; $('reg-error-consent').hidden = true;
+    fetch('/api/auth/register', {
+      method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobile: $('reg-mobile').value.trim(), email: $('reg-email').value.trim(), consent: $('reg-consent').checked })
+    }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { s: r.status, b: b }; }); })
+      .then(function (r) {
+        if (r.s === 201) window.location.href = '/citizen';
+        else if (r.b.code === 'INVALID_MOBILE') { var m = $('reg-error-mobile'); m.textContent = r.b.message; m.hidden = false; }
+        else if (r.b.code === 'CONSENT_REQUIRED') { var c = $('reg-error-consent'); c.textContent = r.b.message; c.hidden = false; }
+        else if (r.s === 401) window.location.href = '/login';
+        else window.location.href = '/';
+      });
+  });
+})();
+</script>

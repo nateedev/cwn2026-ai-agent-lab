@@ -1,0 +1,13 @@
+{
+ "total": 51,
+ "passed": 50,
+ "failed": [
+  "TC-SLA-02"
+ ],
+ "details": [
+  {
+   "id": "TC-SLA-02",
+   "brief": "Error: expect(locator).toHaveText(expected) failed | Expected: \"8 ธ.ค. 2569 16:30\" | Received: \"4 ธ.ค. 2569 16:30\" | - Expect \"toHaveText\" getByTestId('sla-due') with timeout 7000ms | - waiting for getByTestId('sla-due') | - unexpected value \"4 ธ.ค. 2569 16:30\""
+  }
+ ]
+}

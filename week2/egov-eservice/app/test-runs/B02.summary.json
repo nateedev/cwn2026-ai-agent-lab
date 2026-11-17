@@ -1,0 +1,13 @@
+{
+ "total": 51,
+ "passed": 50,
+ "failed": [
+  "TC-UPLOAD-01"
+ ],
+ "details": [
+  {
+   "id": "TC-UPLOAD-01",
+   "brief": "Error: 5242880 | Expected: 1 | Received: 0 | - 5242880 getByTestId('file-item') with timeout 7000ms | - waiting for getByTestId('file-item') | - unexpected value \"0\""
+  }
+ ]
+}
